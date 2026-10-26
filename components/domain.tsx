@@ -1,10 +1,15 @@
-// Domain-specific presentational components (mastery badges, citations, data labels).
+// Domain-specific presentational components for Intelligence Lab.
 import { BookMarked, FileText, FlaskConical } from "lucide-react";
 import type { Citation, Difficulty, MasteryLevel, TaskKind } from "@/types/domain";
 import { LEVEL_LABEL } from "@/lib/diagnosis/mastery";
 import { Badge } from "./ui";
 
-export const levelTone: Record<MasteryLevel, "red" | "amber" | "green" | "slate"> = { weak: "red", medium: "amber", strong: "green", insufficient: "slate" };
+export const levelTone: Record<MasteryLevel, "red" | "amber" | "brand" | "slate"> = {
+  weak: "red",
+  medium: "amber",
+  strong: "brand",
+  insufficient: "slate",
+};
 
 export function LevelBadge({ level }: { level: MasteryLevel }) {
   return <Badge tone={levelTone[level]}>{LEVEL_LABEL[level]}</Badge>;
@@ -29,7 +34,7 @@ export function TaskKindBadge({ kind }: { kind: TaskKind }) {
 export function SampleDataBadge() {
   return (
     <Badge tone="amber">
-      <FlaskConical className="h-3 w-3" aria-hidden /> Example data
+      <FlaskConical className="h-3 w-3 text-[#E5A83B]" aria-hidden /> Example data
     </Badge>
   );
 }
@@ -39,18 +44,18 @@ export function CitationList({ citations, compact }: { citations: Citation[]; co
   return (
     <ul className="space-y-2">
       {citations.map((c) => (
-        <li key={c.chunkId} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-600">
-            <FileText className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-            <span>{c.documentName}</span>
+        <li key={c.chunkId} className="rounded-lg border border-[#2A2D26] bg-[#171915] p-3 transition-colors hover:border-[#3A3F33]">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[#A0A39A]">
+            <FileText className="h-3.5 w-3.5 text-[#D5FF32]" aria-hidden />
+            <span className="font-semibold text-[#F4F5F0]">{c.documentName}</span>
             {c.section && (
-              <span className="inline-flex items-center gap-1 text-slate-500">
-                <BookMarked className="h-3 w-3" aria-hidden /> §{c.section}
+              <span className="inline-flex items-center gap-1 text-[#A0A39A]">
+                <BookMarked className="h-3 w-3 text-[#73776E]" aria-hidden /> §{c.section}
               </span>
             )}
-            {c.page && <span className="text-slate-500">p. {c.page}</span>}
+            {c.page && <span className="text-[#73776E]">p. {c.page}</span>}
           </p>
-          {!compact && <p className="mt-1 text-sm leading-relaxed text-slate-700">“{c.excerpt}”</p>}
+          {!compact && <p className="mt-2 text-xs leading-relaxed text-[#F4F5F0]/90 border-l-2 border-[#2A2D26] pl-2.5 italic">“{c.excerpt}”</p>}
         </li>
       ))}
     </ul>

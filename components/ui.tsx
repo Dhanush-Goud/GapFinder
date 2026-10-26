@@ -1,18 +1,28 @@
-// Reusable UI primitives — one design system for every page.
+// Reusable UI primitives — Intelligence Lab design system.
 import clsx from "clsx";
 import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ComponentType, ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "dark" | "dark-outline";
+
 const buttonStyles: Record<Variant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm disabled:bg-brand-300",
-  secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:text-slate-400",
-  ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:text-slate-300",
-  danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50 disabled:text-red-300",
+  primary:
+    "bg-[#D5FF32] text-[#080908] font-semibold hover:bg-[#C2EB28] active:translate-y-[1px] disabled:bg-[#20221D] disabled:text-[#73776E] shadow-[0_1px_8px_rgba(213,255,50,0.2)]",
+  secondary:
+    "bg-[#171915] text-[#F4F5F0] border border-[#2A2D26] hover:bg-[#20221D] hover:border-[#3A3F33] active:translate-y-[1px] disabled:text-[#73776E] disabled:border-[#1F221B]",
+  ghost:
+    "text-[#A0A39A] hover:bg-[#171915] hover:text-[#F4F5F0] disabled:text-[#73776E]",
+  danger:
+    "bg-[#171915] text-[#EF4444] border border-[#EF4444]/30 hover:bg-[#EF4444]/15 hover:border-[#EF4444]/50 disabled:text-[#73776E]",
+  dark:
+    "bg-[#080908] text-[#F4F5F0] font-bold hover:bg-[#171915] hover:text-[#D5FF32] border border-[#080908] active:translate-y-[1px] shadow-lg",
+  "dark-outline":
+    "bg-[#080908]/15 text-[#080908] font-bold border border-[#080908]/40 hover:bg-[#080908]/25 active:translate-y-[1px]",
 };
+
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D5FF32] disabled:cursor-not-allowed select-none";
 
 export function Button({
   variant = "primary",
@@ -51,35 +61,83 @@ export function LinkButton({
   );
 }
 
-export function Card({ className, children, as: As = "section" }: { className?: string; children: ReactNode; as?: "section" | "div" | "article" }) {
-  return <As className={clsx("min-w-0 rounded-xl border border-slate-200 bg-white shadow-card", className)}>{children}</As>;
+export function Card({
+  className,
+  children,
+  as: As = "section",
+  elevated = false,
+}: {
+  className?: string;
+  children: ReactNode;
+  as?: "section" | "div" | "article";
+  elevated?: boolean;
+}) {
+  return (
+    <As
+      className={clsx(
+        "min-w-0 rounded-xl border border-[#2A2D26] transition-colors",
+        elevated ? "bg-[#20221D]" : "bg-[#10110F]",
+        className
+      )}
+    >
+      {children}
+    </As>
+  );
 }
 
-export function CardHeader({ title, description, action, icon: Icon }: { title: ReactNode; description?: ReactNode; action?: ReactNode; icon?: ComponentType<{ className?: string }> }) {
+export function CardHeader({
+  title,
+  description,
+  action,
+  icon: Icon,
+  badge,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  icon?: ComponentType<{ className?: string }>;
+  badge?: ReactNode;
+}) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-      <div className="flex min-w-0 items-start gap-3">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#2A2D26] px-5 py-3.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         {Icon && (
-          <span className="mt-0.5 rounded-lg bg-brand-50 p-1.5 text-brand-600">
-            <Icon className="h-4 w-4" aria-hidden />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#2A2D26] bg-[#171915] text-[#D5FF32]">
+            <Icon className="h-3.5 w-3.5" aria-hidden />
           </span>
         )}
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold tracking-tight text-[#F4F5F0]">{title}</h2>
+            {badge}
+          </div>
+          {description && <p className="mt-0.5 text-xs text-[#A0A39A]">{description}</p>}
         </div>
       </div>
-      {action}
+      {action && <div className="flex items-center gap-2">{action}</div>}
     </div>
   );
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  badge,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+  badge?: ReactNode;
+}) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#2A2D26]/60 pb-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-slate-600">{description}</p>}
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F4F5F0]">{title}</h1>
+          {badge}
+        </div>
+        {description && <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[#A0A39A]">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -88,81 +146,214 @@ export function PageHeader({ title, description, actions }: { title: string; des
 
 type Tone = "slate" | "brand" | "red" | "amber" | "green" | "blue" | "violet";
 const tones: Record<Tone, string> = {
-  slate: "bg-slate-100 text-slate-700 ring-slate-200",
-  brand: "bg-brand-50 text-brand-700 ring-brand-200",
-  red: "bg-red-50 text-red-700 ring-red-200",
-  amber: "bg-amber-50 text-amber-800 ring-amber-200",
-  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  blue: "bg-sky-50 text-sky-700 ring-sky-200",
-  violet: "bg-violet-50 text-violet-700 ring-violet-200",
+  slate: "bg-[#171915] text-[#A0A39A] ring-[#2A2D26]",
+  brand: "bg-[#D5FF32]/10 text-[#D5FF32] ring-[#D5FF32]/30",
+  red: "bg-[#EF4444]/10 text-[#F87171] ring-[#EF4444]/30",
+  amber: "bg-[#E5A83B]/10 text-[#FBBF24] ring-[#E5A83B]/30",
+  green: "bg-[#10B981]/10 text-[#34D399] ring-[#10B981]/30",
+  blue: "bg-[#38BDF8]/10 text-[#38BDF8] ring-[#38BDF8]/30",
+  violet: "bg-[#A855F7]/10 text-[#C084FC] ring-[#A855F7]/30",
 };
 
 export function Badge({ tone = "slate", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={clsx("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", tones[tone], className)}>{children}</span>;
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-medium tracking-wide ring-1 ring-inset",
+        tones[tone],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
-export function ProgressBar({ value, tone = "brand", label }: { value: number; tone?: "brand" | "red" | "amber" | "green" | "slate"; label?: string }) {
-  const colors = { brand: "bg-brand-500", red: "bg-red-500", amber: "bg-amber-500", green: "bg-emerald-500", slate: "bg-slate-400" };
+export function ProgressBar({
+  value,
+  tone = "brand",
+  label,
+  height = "h-1.5",
+}: {
+  value: number;
+  tone?: "brand" | "red" | "amber" | "green" | "slate";
+  label?: string;
+  height?: string;
+}) {
+  const colors = {
+    brand: "bg-[#D5FF32]",
+    red: "bg-[#EF4444]",
+    amber: "bg-[#E5A83B]",
+    green: "bg-[#10B981]",
+    slate: "bg-[#73776E]",
+  };
   const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-      <div className={clsx("h-full rounded-full transition-all", colors[tone])} style={{ width: `${pct}%` }} />
+    <div
+      className={clsx("w-full overflow-hidden rounded-full bg-[#171915] border border-[#2A2D26]", height)}
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={label}
+    >
+      <div className={clsx("h-full rounded-full transition-all duration-300", colors[tone])} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-export function Alert({ tone = "info", title, children, className }: { tone?: "info" | "success" | "warning" | "error"; title?: ReactNode; children?: ReactNode; className?: string }) {
-  const map = {
-    info: { cls: "border-sky-200 bg-sky-50 text-sky-900", Icon: Info },
-    success: { cls: "border-emerald-200 bg-emerald-50 text-emerald-900", Icon: CheckCircle2 },
-    warning: { cls: "border-amber-200 bg-amber-50 text-amber-900", Icon: AlertTriangle },
-    error: { cls: "border-red-200 bg-red-50 text-red-900", Icon: XCircle },
-  }[tone];
+export function CircularProgress({
+  value,
+  size = 56,
+  strokeWidth = 5,
+  tone = "lime",
+  label,
+  children,
+}: {
+  value: number; // 0 to 1 or 0 to 100
+  size?: number;
+  strokeWidth?: number;
+  tone?: "lime" | "dark" | "amber" | "red" | "green";
+  label?: string;
+  children?: ReactNode;
+}) {
+  const normalized = value > 1 ? value : Math.round(value * 100);
+  const clamped = Math.max(0, Math.min(100, normalized));
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (clamped / 100) * circumference;
+
+  const strokeColors = {
+    lime: "#D5FF32",
+    dark: "#080908",
+    amber: "#E5A83B",
+    red: "#EF4444",
+    green: "#10B981",
+  };
+
+  const trackColors = {
+    lime: "#171915",
+    dark: "rgba(8, 9, 8, 0.2)",
+    amber: "#20221D",
+    red: "#20221D",
+    green: "#20221D",
+  };
+
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={clsx("flex gap-3 rounded-lg border px-4 py-3 text-sm", map.cls, className)}>
-      <map.Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-      <div className="min-w-0 space-y-1">
-        {title && <p className="font-medium">{title}</p>}
-        {children && <div className="leading-relaxed">{children}</div>}
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }} aria-label={label}>
+      <svg width={size} height={size} className="-rotate-90 transform">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={trackColors[tone]}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={strokeColors[tone]}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          fill="none"
+          className="transition-all duration-500 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums">
+        {children ?? `${clamped}%`}
       </div>
     </div>
   );
 }
 
-export function EmptyState({ icon: Icon, title, children, action }: { icon: ComponentType<{ className?: string }>; title: string; children?: ReactNode; action?: ReactNode }) {
+export function Alert({
+  tone = "info",
+  title,
+  children,
+  className,
+}: {
+  tone?: "info" | "success" | "warning" | "error";
+  title?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  const map = {
+    info: { cls: "border-[#1E293B] bg-[#10141A] text-[#93C5FD]", Icon: Info, iconColor: "text-sky-400" },
+    success: { cls: "border-[#1B3828] bg-[#0E1A14] text-[#A7F3D0]", Icon: CheckCircle2, iconColor: "text-emerald-400" },
+    warning: { cls: "border-[#3D3017] bg-[#19150B] text-[#FDE68A]", Icon: AlertTriangle, iconColor: "text-amber-400" },
+    error: { cls: "border-[#451818] bg-[#1C0E0E] text-[#FECACA]", Icon: XCircle, iconColor: "text-red-400" },
+  }[tone];
+  return (
+    <div role={tone === "error" ? "alert" : "status"} className={clsx("flex gap-3 rounded-lg border px-4 py-3 text-sm", map.cls, className)}>
+      <map.Icon className={clsx("mt-0.5 h-4 w-4 shrink-0", map.iconColor)} aria-hidden />
+      <div className="min-w-0 space-y-1">
+        {title && <p className="font-semibold">{title}</p>}
+        {children && <div className="leading-relaxed text-xs opacity-90">{children}</div>}
+      </div>
+    </div>
+  );
+}
+
+export function EmptyState({
+  icon: Icon,
+  title,
+  children,
+  action,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-      <span className="rounded-full bg-brand-50 p-3 text-brand-600">
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#2A2D26] bg-[#171915] text-[#D5FF32]">
         <Icon className="h-6 w-6" aria-hidden />
       </span>
-      <h3 className="mt-4 text-base font-semibold text-slate-900">{title}</h3>
-      {children && <div className="mt-1 max-w-md text-sm text-slate-600">{children}</div>}
+      <h3 className="mt-4 text-base font-semibold text-[#F4F5F0]">{title}</h3>
+      {children && <div className="mt-1.5 max-w-md text-xs leading-relaxed text-[#A0A39A]">{children}</div>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
 
-export function Spinner({ label = "Loading…" }: { label?: string }) {
+export function Spinner({ label = "Loading intelligence…" }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500" role="status">
-      <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> {label}
+    <div className="flex items-center justify-center gap-2.5 py-16 text-sm text-[#A0A39A]" role="status">
+      <Loader2 className="h-5 w-5 animate-spin text-[#D5FF32]" aria-hidden /> {label}
     </div>
   );
 }
 
-export function Stat({ label, value, hint, icon: Icon, tone = "brand" }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ComponentType<{ className?: string }>; tone?: Tone }) {
+export function Stat({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  tone = "brand",
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+  icon?: ComponentType<{ className?: string }>;
+  tone?: Tone;
+}) {
   return (
-    <Card className="p-4">
+    <Card className="p-4 relative overflow-hidden group hover:border-[#3A3F33] transition-colors">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#73776E]">{label}</p>
         {Icon && (
-          <span className={clsx("rounded-md p-1.5 ring-1 ring-inset", tones[tone])}>
-            <Icon className="h-4 w-4" aria-hidden />
+          <span className={clsx("flex h-6 w-6 items-center justify-center rounded-md ring-1 ring-inset", tones[tone])}>
+            <Icon className="h-3.5 w-3.5" aria-hidden />
           </span>
         )}
       </div>
-      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-[#F4F5F0]">{value}</p>
+      {hint && <p className="mt-1 text-xs text-[#A0A39A] truncate">{hint}</p>}
     </Card>
   );
 }
@@ -170,14 +361,14 @@ export function Stat({ label, value, hint, icon: Icon, tone = "brand" }: { label
 export function Field({ label, htmlFor, hint, children }: { label: string; htmlFor: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={htmlFor} className="block text-xs font-semibold uppercase tracking-wider text-[#A0A39A]">
         {label}
       </label>
       {children}
-      {hint && <p className="text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="text-xs text-[#73776E]">{hint}</p>}
     </div>
   );
 }
 
 export const inputClass =
-  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:bg-slate-50";
+  "block w-full rounded-lg border border-[#2A2D26] bg-[#10110F] px-3 py-2 text-sm text-[#F4F5F0] placeholder:text-[#73776E] shadow-sm transition-colors focus:border-[#D5FF32] focus:outline-none focus:ring-1 focus:ring-[#D5FF32] disabled:opacity-50 disabled:cursor-not-allowed";

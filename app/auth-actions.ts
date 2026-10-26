@@ -51,12 +51,43 @@ export async function registerAction(_prev: AuthFormState, form: FormData): Prom
 }
 
 export async function judgeLoginAction(): Promise<AuthFormState> {
+  return demoLoginAction();
+}
+
+export async function demoLoginAction(next?: string): Promise<AuthFormState> {
   const creds = getJudgeCredentials();
-  if (!creds) return { error: "Judge access is not configured on this deployment." };
+  if (!creds) return { error: "Demo access credentials are not configured on this server. Please check .env.local." };
   const supabase = await createUserClient();
-  const { error } = await supabase.auth.signInWithPassword(creds);
-  if (error) return { error: `Judge account sign-in failed: ${error.message}` };
-  redirect("/dashboard");
+  const { data, error } = await supabase.auth.signInWithPassword(creds);
+  if (error) return { error: `Demo account sign-in failed: ${error.message}` };
+
+  if (data.user) {
+    try {
+      const { count } = await supabase
+        .from("documents")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", data.user.id);
+      if (count === 0) {
+        const { loadSamplesLive } = await import("@/lib/data/live-samples");
+        const { getAIProvider } = await import("@/lib/ai");
+        await loadSamplesLive(supabase, getAIProvider(), data.user.id);
+      }
+
+      const { count: attemptCount } = await supabase
+        .from("quiz_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", data.user.id);
+      if (attemptCount === 0) {
+        const { seedDemoAttemptLive } = await import("@/lib/data/live-samples");
+        const { getAIProvider } = await import("@/lib/ai");
+        await seedDemoAttemptLive(supabase, getAIProvider(), data.user.id);
+      }
+    } catch (seedErr) {
+      console.warn("[demo] Auto-seed note:", seedErr);
+    }
+  }
+
+  redirect(safeNext(next ?? "/dashboard"));
 }
 
 export async function logoutAction() {

@@ -4,15 +4,49 @@
 
 :root {
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  color-scheme: light;
+  color-scheme: dark;
+  --bg-main: #080908;
+  --surface-primary: #10110F;
+  --surface-secondary: #171915;
+  --surface-elevated: #20221D;
+  --lime: #D5FF32;
+  --text-primary: #F4F5F0;
+  --text-secondary: #A0A39A;
+  --text-muted: #73776E;
+  --border-main: #2A2D26;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background-color: #080908;
+  color: #F4F5F0;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Keyboard focus is always visible. */
+::selection {
+  background-color: #D5FF32;
+  color: #080908;
+}
+
+/* Keyboard focus is high-contrast electric lime */
 :focus-visible {
-  outline: 2px solid theme("colors.brand.500");
+  outline: 2px solid #D5FF32;
   outline-offset: 2px;
+}
+
+/* Refined dark scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080908;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2D26;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3F33;
 }

@@ -1,5 +1,15 @@
 "use client";
-import { AlertTriangle, MessageSquareText, Search, Send, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  BrainCircuit,
+  CornerDownLeft,
+  FileSearch,
+  MessageSquareText,
+  Search,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { TutorAnswer } from "@/types/domain";
@@ -16,10 +26,10 @@ interface Turn {
 }
 
 const retrievalLabel: Record<TutorAnswer["retrieval"], string> = {
-  semantic: "Semantic search (pgvector)",
-  fulltext: "Full-text search (no embeddings)",
-  lexical: "Keyword search (BM25)",
-  none: "No passages found",
+  semantic: "Semantic Retrieval (pgvector)",
+  fulltext: "Full-Text Index (Postgres)",
+  lexical: "Keyword Retrieval (BM25)",
+  none: "No Passages Found",
 };
 
 export function TutorView() {
@@ -43,90 +53,182 @@ export function TutorView() {
       const answer = await askTutor(q, topicId);
       setTurns((t) => t.map((x) => (x === turn ? { ...x, answer } : x)));
     } catch (err) {
-      setTurns((t) => t.map((x) => (x === turn ? { ...x, error: err instanceof Error ? err.message : "Request failed." } : x)));
+      setTurns((t) =>
+        t.map((x) => (x === turn ? { ...x, error: err instanceof Error ? err.message : "Request failed." } : x))
+      );
     } finally {
       setBusy(false);
     }
   }
 
-  const examples = ["Why does BFS find shortest paths in unweighted graphs?", "When should I mark a vertex as visited?", "What is the difference between a base case and a recursive case?"];
+  const examples = [
+    "Why does BFS find shortest paths in unweighted graphs?",
+    "When should I mark a vertex as visited?",
+    "What is the difference between a base case and a recursive case?",
+  ];
 
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
-        title="Explain a topic"
-        description="Ask about anything in your uploaded material. Answers are built only from retrieved passages and cite them; if your material doesn't cover it, you'll be told instead of getting an unsupported answer."
+        title="AI Tutor & Explanation Lab"
+        description="Ask conceptual questions about your course materials. Every explanation is strictly grounded in retrieved passages with verifiable citations; if notes do not support the claim, an insufficient-evidence state is reported."
       />
-      <Card className="mb-6">
+
+      {/* Question Input Card */}
+      <Card className="border-[#2A2D26] bg-[#10110F]">
         <form onSubmit={ask} className="space-y-3 p-5">
-          <label htmlFor="q" className="sr-only">Your question</label>
-          <textarea id="q" rows={3} maxLength={1000} value={question} onChange={(e) => setQuestion(e.target.value)} className={inputClass} placeholder="e.g. Why does inserting at the front of an array cost O(n)?"
-            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void ask(e); }} />
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <label htmlFor="q" className="sr-only">
+            Your question
+          </label>
+          <div className="relative">
+            <textarea
+              id="q"
+              rows={3}
+              maxLength={1000}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className={`${inputClass} resize-none font-sans text-xs leading-relaxed`}
+              placeholder="Inquire regarding any concept or problem (e.g. How does amortized constant time apply to dynamic array resizing?)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void ask(e);
+              }}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-2">
-              <label htmlFor="topic" className="text-sm text-slate-600">Limit to</label>
-              <select id="topic" value={topicId ?? ""} onChange={(e) => setTopicId(e.target.value || null)} className={`${inputClass} w-auto`}>
-                <option value="">All my material</option>
-                {d.topLevel.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              <label htmlFor="topic" className="text-xs font-semibold uppercase tracking-wider text-[#73776E]">
+                Scope:
+              </label>
+              <select
+                id="topic"
+                value={topicId ?? ""}
+                onChange={(e) => setTopicId(e.target.value || null)}
+                className="rounded-lg border border-[#2A2D26] bg-[#171915] px-2.5 py-1.5 text-xs text-[#F4F5F0] focus:border-[#D5FF32] focus:outline-none"
+              >
+                <option value="">All Uploaded Materials</option>
+                {d.topLevel.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
             </div>
-            <Button type="submit" icon={Send} loading={busy} disabled={question.trim().length < 3}>Ask</Button>
+
+            <Button
+              type="submit"
+              icon={Send}
+              loading={busy}
+              disabled={question.trim().length < 3}
+              className="text-xs uppercase tracking-wider font-bold"
+            >
+              Consult Tutor
+            </Button>
           </div>
-          <p className="text-xs text-slate-500">
-            {config.mode === "demo" || !config.aiConfigured
-              ? "Running without an AI model: the answer is assembled from the most relevant sentences of your material (extractive), found by keyword search."
-              : `Answers are written by ${config.aiModel} from passages retrieved for your question, then each citation is checked against the retrieved set.`}
+
+          <p className="text-[11px] text-[#73776E] border-t border-[#2A2D26]/60 pt-2 flex items-center justify-between">
+            <span>
+              {config.mode === "demo" || !config.aiConfigured
+                ? "Running deterministic extractive mode: synthesizes verified sentences from retrieved material."
+                : `Augmented synthesis via ${config.aiModel} with citation verification against stored chunks.`}
+            </span>
+            <span className="hidden sm:inline font-mono text-[10px]">⌘+Enter to submit</span>
           </p>
         </form>
       </Card>
 
+      {/* Answer Stream */}
       {turns.length === 0 ? (
-        <Card>
-          <EmptyState icon={MessageSquareText} title="Ask your first question">
-            {state.chunks.length === 0 ? "Upload notes first so there is something to search." : (
-              <span className="mt-2 flex flex-wrap justify-center gap-2">
-                {examples.map((x) => (
-                  <button key={x} onClick={() => setQuestion(x)} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 hover:border-brand-300 hover:text-brand-700">{x}</button>
-                ))}
-              </span>
+        <Card className="border-[#2A2D26] bg-[#10110F]">
+          <EmptyState icon={MessageSquareText} title="Consult the diagnostic study assistant">
+            {state.chunks.length === 0 ? (
+              <p>Upload lecture notes or textbook chapters in Materials to begin asking grounded questions.</p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-[#73776E]">Suggested technical queries from course materials:</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {examples.map((x) => (
+                    <button
+                      key={x}
+                      onClick={() => setQuestion(x)}
+                      className="rounded-lg border border-[#2A2D26] bg-[#171915] px-3 py-1.5 text-xs text-[#A0A39A] transition-colors hover:border-[#D5FF32]/50 hover:text-[#D5FF32]"
+                    >
+                      {x}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </EmptyState>
         </Card>
       ) : (
         <div className="space-y-4">
           {turns.map((t, i) => (
-            <Card key={i}>
-              <CardHeader icon={Search} title={t.question} description={t.topicId ? `Limited to ${d.topicName(t.topicId)}` : "All material"} />
-              <div className="space-y-4 px-5 py-4">
-                {!t.answer && !t.error && <p className="text-sm text-slate-500">Retrieving passages…</p>}
-                {t.error && <Alert tone="error">{t.error}</Alert>}
-                {t.answer?.status === "insufficient_evidence" && (
-                  <Alert tone="warning" title="Not enough evidence in your material">{t.answer.answer}</Alert>
+            <Card key={i} className="border-[#2A2D26] bg-[#10110F]">
+              <CardHeader
+                icon={Search}
+                title={t.question}
+                description={t.topicId ? `Constrained to unit: ${d.topicName(t.topicId)}` : "Entire repository search"}
+              />
+              <div className="space-y-4 p-5">
+                {!t.answer && !t.error && (
+                  <div className="flex items-center gap-2 text-xs text-[#A0A39A]">
+                    <span className="h-2 w-2 rounded-full bg-[#D5FF32] animate-pulse" />
+                    Searching stored index & analyzing passages…
+                  </div>
                 )}
+
+                {t.error && <Alert tone="error">{t.error}</Alert>}
+
+                {t.answer?.status === "insufficient_evidence" && (
+                  <Alert tone="warning" title="Insufficient Source Evidence">
+                    {t.answer.answer}
+                  </Alert>
+                )}
+
                 {t.answer?.status === "answered" && (
                   <>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{t.answer.answer}</div>
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">Sources</p>
-                      <CitationList citations={t.answer.citations} />
+                    <div className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-[#F4F5F0] bg-[#171915] border border-[#2A2D26] p-4 rounded-xl">
+                      {t.answer.answer}
                     </div>
+
+                    {t.answer.citations.length > 0 && (
+                      <div className="border-t border-[#2A2D26]/70 pt-3">
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#73776E]">
+                          Grounding Passages & Citations ({t.answer.citations.length})
+                        </p>
+                        <CitationList citations={t.answer.citations} />
+                      </div>
+                    )}
                   </>
                 )}
+
                 {t.answer && (
-                  <p className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-[#2A2D26]/70 pt-3 text-[11px] text-[#73776E]">
                     <Badge tone="slate">{retrievalLabel[t.answer.retrieval]}</Badge>
                     <Badge tone={t.answer.method === "llm" ? "brand" : "slate"}>
-                      {t.answer.method === "llm" ? <><Sparkles className="h-3 w-3" /> AI explanation</> : "Extractive answer (no AI model)"}
+                      {t.answer.method === "llm" ? (
+                        <>
+                          <Sparkles className="h-3 w-3 text-[#D5FF32]" /> AI Synthesis
+                        </>
+                      ) : (
+                        "Extractive Grounded"
+                      )}
                     </Badge>
-                    {t.answer.passagesConsidered} passage(s) considered
-                    {t.answer.status === "insufficient_evidence" && <AlertTriangle className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
-                  </p>
+                    <span>·</span>
+                    <span>{t.answer.passagesConsidered} passage(s) evaluated</span>
+                    {t.answer.status === "insufficient_evidence" && (
+                      <span className="text-[#E5A83B] flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Material gap flagged
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </Card>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -1,16 +1,32 @@
 "use client";
-import { AlertCircle, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Database, FileText, Loader2, PackageOpen, RotateCcw, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Database,
+  FileText,
+  Filter,
+  Loader2,
+  PackageOpen,
+  RotateCcw,
+  Search,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import type { DocumentKind, StudyDocument } from "@/types/domain";
 import { formatBytes, formatDateTime, SampleDataBadge } from "@/components/domain";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Field, PageHeader, inputClass } from "@/components/ui";
 import { useAppState } from "@/features/app-state/AppStateProvider";
 
 const KINDS: { value: DocumentKind; label: string }[] = [
-  { value: "syllabus", label: "Syllabus" },
-  { value: "notes", label: "Notes" },
-  { value: "textbook", label: "Textbook chapter" },
-  { value: "question_paper", label: "Previous question paper" },
+  { value: "syllabus", label: "Syllabus (defines topic map)" },
+  { value: "notes", label: "Lecture Notes" },
+  { value: "textbook", label: "Textbook Chapter" },
+  { value: "question_paper", label: "Previous Question Paper" },
 ];
 const MAX_MB = 4;
 
@@ -20,7 +36,10 @@ export function MaterialsView() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "success" | "error" | "warning"; text: string } | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterKind, setFilterKind] = useState<string>("all");
   const inputRef = useRef<HTMLInputElement>(null);
+
   const hasSyllabus = state.documents.some((d) => d.kind === "syllabus" && d.status === "ready");
   const hasSample = state.documents.some((d) => d.isSample);
 
@@ -45,12 +64,14 @@ export function MaterialsView() {
     setMessage(null);
     try {
       const doc = await uploadDocument(file, kind);
-      if (doc?.status === "failed") setMessage({ tone: "error", text: doc.error ?? "Processing failed." });
-      else
+      if (doc?.status === "failed") {
+        setMessage({ tone: "error", text: doc.error ?? "Processing failed." });
+      } else {
         setMessage({
           tone: doc?.embeddingStatus === "failed" ? "warning" : "success",
           text: `“${doc.name}” processed: ${doc.chunkCount} passages indexed${doc.pageCount ? ` from ${doc.pageCount} pages` : ""}.${doc.error ? ` ${doc.error}` : ""}`,
         });
+      }
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err) {
@@ -73,126 +94,287 @@ export function MaterialsView() {
     }
   }
 
+  const filteredDocs = useMemo(() => {
+    return state.documents.filter((doc) => {
+      const matchSearch = doc.name.toLowerCase().includes(search.toLowerCase());
+      const matchKind = filterKind === "all" || doc.kind === filterKind;
+      return matchSearch && matchKind;
+    });
+  }, [state.documents, search, filterKind]);
+
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
-        title="Materials"
-        description="Upload your syllabus first — it defines the topic map. Notes and textbook chapters are split into passages that questions and explanations are grounded in."
+        title="Study Materials"
+        description="Ingest, extract, and index course documents. Syllabi define verified topic graphs; notes and textbook chapters produce verifiable, cited passages for diagnostic questions."
         actions={
           config.mode === "live" && !hasSample ? (
-            <Button variant="secondary" icon={PackageOpen} loading={busy === "samples"} onClick={() => run("samples", loadSamples)}>
-              Load sample DSA course
+            <Button
+              variant="secondary"
+              icon={PackageOpen}
+              loading={busy === "samples"}
+              onClick={() => run("samples", loadSamples)}
+              className="text-xs"
+            >
+              Load Sample Course
             </Button>
           ) : undefined
         }
       />
 
-      {message && <Alert tone={message.tone} className="mb-6">{message.text}</Alert>}
+      {message && <Alert tone={message.tone}>{message.text}</Alert>}
 
-      <Card className="mb-6">
-        <CardHeader icon={Upload} title="Upload a document" description={`PDF, .txt or .md — up to ${MAX_MB} MB. Text-based PDFs only (scanned images can't be read yet).`} />
-        <div className="grid gap-4 px-5 py-4 sm:grid-cols-[1fr_220px_auto] sm:items-end">
-          <Field label="File" htmlFor="file">
-            <input
-              ref={inputRef}
-              id="file"
-              type="file"
-              accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown"
-              onChange={(e) => pick(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100"
-            />
-          </Field>
-          <Field label="Document type" htmlFor="kind">
-            <select id="kind" value={kind} onChange={(e) => setKind(e.target.value as DocumentKind)} className={inputClass}>
-              {KINDS.map((k) => (
-                <option key={k.value} value={k.value}>{k.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Button onClick={upload} disabled={!file} loading={busy === "upload"} icon={Upload}>
-            {busy === "upload" ? "Processing…" : "Upload & process"}
-          </Button>
+      {/* Upload Zone Card */}
+      <Card className="border-[#2A2D26] bg-[#10110F]">
+        <CardHeader
+          icon={Upload}
+          title="Document Ingestion"
+          description={`PDF, .txt or .md files up to ${MAX_MB} MB. Text-layer extraction with automatic chunking.`}
+        />
+        <div className="p-5 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[1fr_240px_auto] sm:items-end">
+            <Field label="File Attachment" htmlFor="file" hint="Select a local document to process">
+              <input
+                ref={inputRef}
+                id="file"
+                type="file"
+                accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown"
+                onChange={(e) => pick(e.target.files?.[0] ?? null)}
+                className="block w-full text-xs text-[#A0A39A] file:mr-3 file:rounded-lg file:border file:border-[#2A2D26] file:bg-[#171915] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[#D5FF32] hover:file:bg-[#20221D] file:transition-colors cursor-pointer"
+              />
+            </Field>
+
+            <Field label="Document Category" htmlFor="kind">
+              <select
+                id="kind"
+                value={kind}
+                onChange={(e) => setKind(e.target.value as DocumentKind)}
+                className={inputClass}
+              >
+                {KINDS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Button
+              onClick={upload}
+              disabled={!file}
+              loading={busy === "upload"}
+              icon={Upload}
+              className="w-full sm:w-auto h-[38px] text-xs uppercase tracking-wider font-bold"
+            >
+              {busy === "upload" ? "Extracting…" : "Ingest & Index"}
+            </Button>
+          </div>
+
+          {!hasSyllabus && (
+            <div className="rounded-lg border border-[#D5FF32]/30 bg-[#D5FF32]/10 p-3 text-xs text-[#D5FF32]">
+              <strong>Recommendation:</strong> Ingest a course syllabus first. Its numbered chapters and units form the diagnostic knowledge map that subsequent notes are linked to.
+            </div>
+          )}
+
+          {config.mode === "demo" && (
+            <p className="text-[11px] text-[#73776E] border-t border-[#2A2D26] pt-3">
+              Demo sandbox: Documents are processed locally in your browser memory. Extracted text is fully indexed, chunked, and searchable by the AI Tutor and Diagnostic engine.
+            </p>
+          )}
         </div>
-        {!hasSyllabus && <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Tip: no syllabus yet. Upload one with numbered units (e.g. “Unit 1: Arrays”, “1.1 Indexing”) to build your topic map.</p>}
-        {config.mode === "demo" && (
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-            Demo mode: uploads are really extracted, chunked and searchable by the topic assistant, and an uploaded syllabus is parsed into topics. Generating quiz questions from your own files needs live mode with a Gemini key. Files stay in this browser.
-          </p>
-        )}
       </Card>
 
-      <Card>
-        <CardHeader icon={BookOpen} title="Library" description={`${state.documents.length} document(s), ${state.chunks.length} indexed passages`} />
-        {state.documents.length === 0 ? (
-          <EmptyState icon={FileText} title="No documents yet">Upload your syllabus and notes to get started.</EmptyState>
+      {/* Document Library */}
+      <Card className="border-[#2A2D26] bg-[#10110F]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2A2D26] p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#2A2D26] bg-[#171915] text-[#D5FF32]">
+              <BookOpen className="h-3.5 w-3.5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-[#F4F5F0]">Document Repository</h2>
+              <p className="text-xs text-[#A0A39A]">
+                {state.documents.length} document(s) · {state.chunks.length} passages indexed
+              </p>
+            </div>
+          </div>
+
+          {/* Search & Filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#73776E]" />
+              <input
+                type="text"
+                placeholder="Search documents…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-44 rounded-lg border border-[#2A2D26] bg-[#171915] pl-8 pr-3 py-1.5 text-xs text-[#F4F5F0] placeholder:text-[#73776E] focus:border-[#D5FF32] focus:outline-none"
+              />
+            </div>
+            <select
+              value={filterKind}
+              onChange={(e) => setFilterKind(e.target.value)}
+              className="rounded-lg border border-[#2A2D26] bg-[#171915] px-2.5 py-1.5 text-xs text-[#F4F5F0] focus:border-[#D5FF32] focus:outline-none"
+            >
+              <option value="all">All Types</option>
+              <option value="syllabus">Syllabus</option>
+              <option value="notes">Notes</option>
+              <option value="textbook">Textbook</option>
+              <option value="question_paper">Exam Paper</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredDocs.length === 0 ? (
+          <EmptyState icon={FileText} title="No matching documents found">
+            {state.documents.length === 0
+              ? "Upload your syllabus and notes above to begin building your knowledge telemetry."
+              : "No documents matched your search filter criteria."}
+          </EmptyState>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {state.documents.map((doc) => (
+          <ul className="divide-y divide-[#2A2D26]">
+            {filteredDocs.map((doc) => (
               <DocumentRow
                 key={doc.id}
                 doc={doc}
                 busy={busy === doc.id}
                 live={config.mode === "live"}
-                onRetry={() => run(doc.id, () => retryDocument(doc.id), "Reprocessing finished.")}
+                onRetry={() => run(doc.id, () => retryDocument(doc.id), "Reprocessing completed.")}
                 onDelete={() => {
-                  if (window.confirm(`Delete “${doc.name}” and its indexed passages?`)) void run(doc.id, () => deleteDocument(doc.id), "Document deleted.");
+                  if (window.confirm(`Delete “${doc.name}” and all associated index passages?`)) {
+                    void run(doc.id, () => deleteDocument(doc.id), "Document deleted.");
+                  }
                 }}
               />
             ))}
           </ul>
         )}
       </Card>
-    </>
+    </div>
   );
 }
 
 function StatusBadge({ doc }: { doc: StudyDocument }) {
-  if (doc.status === "ready") return <Badge tone="green"><CheckCircle2 className="h-3 w-3" /> Ready</Badge>;
-  if (doc.status === "failed") return <Badge tone="red"><AlertCircle className="h-3 w-3" /> Failed</Badge>;
-  return <Badge tone="blue"><Loader2 className="h-3 w-3 animate-spin" /> Processing</Badge>;
+  if (doc.status === "ready") {
+    return (
+      <Badge tone="green">
+        <CheckCircle2 className="h-3 w-3 text-[#34D399]" /> Ready
+      </Badge>
+    );
+  }
+  if (doc.status === "failed") {
+    return (
+      <Badge tone="red">
+        <AlertCircle className="h-3 w-3 text-[#F87171]" /> Failed
+      </Badge>
+    );
+  }
+  return (
+    <Badge tone="blue">
+      <Loader2 className="h-3 w-3 animate-spin text-[#38BDF8]" /> Processing
+    </Badge>
+  );
 }
 
 const embeddingLabel: Record<StudyDocument["embeddingStatus"], { text: string; tone: "green" | "slate" | "red" | "blue" }> = {
-  complete: { text: "Semantic search ready", tone: "green" },
-  not_configured: { text: "Keyword search (no embeddings)", tone: "slate" },
-  failed: { text: "Embeddings failed — keyword search", tone: "red" },
-  pending: { text: "Embeddings pending", tone: "blue" },
+  complete: { text: "Semantic Search Active", tone: "green" },
+  not_configured: { text: "Lexical & BM25 Search", tone: "slate" },
+  failed: { text: "Embeddings Fallback", tone: "red" },
+  pending: { text: "Embedding Ingest Pending", tone: "blue" },
 };
 
-function DocumentRow({ doc, busy, live, onRetry, onDelete }: { doc: StudyDocument; busy: boolean; live: boolean; onRetry: () => void; onDelete: () => void }) {
+function DocumentRow({
+  doc,
+  busy,
+  live,
+  onRetry,
+  onDelete,
+}: {
+  doc: StudyDocument;
+  busy: boolean;
+  live: boolean;
+  onRetry: () => void;
+  onDelete: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const emb = embeddingLabel[doc.embeddingStatus];
+
   return (
-    <li className="px-5 py-4">
+    <li className="p-4 sm:p-5 hover:bg-[#171915]/50 transition-colors">
       <div className="flex flex-wrap items-start gap-4">
-        <span className="rounded-lg bg-slate-100 p-2 text-slate-500"><FileText className="h-5 w-5" aria-hidden /></span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#2A2D26] bg-[#171915] text-[#D5FF32]">
+          <FileText className="h-4 w-4" aria-hidden />
+        </span>
+
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate font-medium text-slate-900">{doc.name}</p>
+            <h3 className="truncate text-sm font-semibold text-[#F4F5F0]">{doc.name}</h3>
             <StatusBadge doc={doc} />
             {doc.isSample && <SampleDataBadge />}
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            {KINDS.find((k) => k.value === doc.kind)?.label} · {doc.mimeType === "application/pdf" ? "PDF" : "Text"} · {formatBytes(doc.sizeBytes)} · uploaded {formatDateTime(doc.uploadedAt)}
+
+          <p className="mt-1 text-xs text-[#73776E]">
+            <span className="capitalize text-[#A0A39A]">{doc.kind.replace("_", " ")}</span> ·{" "}
+            {doc.mimeType === "application/pdf" ? "PDF" : "Text"} · {formatBytes(doc.sizeBytes)} · Ingested{" "}
+            {formatDateTime(doc.uploadedAt)}
           </p>
+
           {doc.status === "ready" && (
-            <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-              <Database className="h-3.5 w-3.5 text-slate-400" aria-hidden /> Text extracted · {doc.chunkCount} passages{doc.pageCount ? ` · ${doc.pageCount} pages` : " · section-referenced"}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#A0A39A]">
+              <span className="inline-flex items-center gap-1">
+                <Database className="h-3 w-3 text-[#73776E]" />
+                <strong className="text-[#F4F5F0] tabular-nums font-semibold">{doc.chunkCount}</strong> passages
+                {doc.pageCount ? ` · ${doc.pageCount} pages` : ""}
+              </span>
+              <span>·</span>
               <Badge tone={emb.tone}>{emb.text}</Badge>
+            </div>
+          )}
+
+          {doc.error && (
+            <p className={`mt-2 text-xs ${doc.status === "failed" ? "text-[#F87171]" : "text-[#FBBF24]"}`}>
+              {doc.error}
             </p>
           )}
-          {doc.error && <p className={`mt-2 text-sm ${doc.status === "failed" ? "text-red-600" : "text-amber-700"}`}>{doc.error}</p>}
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setOpen(!open)} icon={open ? ChevronUp : ChevronDown} aria-expanded={open}>Preview</Button>
-          {live && doc.status === "failed" && <Button variant="secondary" icon={RotateCcw} loading={busy} onClick={onRetry}>Retry</Button>}
-          <Button variant="danger" icon={Trash2} loading={busy} onClick={onDelete} aria-label={`Delete ${doc.name}`}>Delete</Button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="ghost"
+            onClick={() => setOpen(!open)}
+            icon={open ? ChevronUp : ChevronDown}
+            className="text-xs"
+            aria-expanded={open}
+          >
+            Preview
+          </Button>
+          {live && doc.status === "failed" && (
+            <Button variant="secondary" icon={RotateCcw} loading={busy} onClick={onRetry} className="text-xs">
+              Retry
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            icon={Trash2}
+            loading={busy}
+            onClick={onDelete}
+            aria-label={`Delete ${doc.name}`}
+            className="text-xs"
+          >
+            Delete
+          </Button>
         </div>
       </div>
+
       {open && (
-        <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
-          {doc.previewText || "No text was extracted."}
-        </pre>
+        <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2D26] bg-[#080908]">
+          <div className="border-b border-[#2A2D26] bg-[#10110F] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#73776E]">
+            Extracted Text Stream
+          </div>
+          <pre className="max-h-72 overflow-auto whitespace-pre-wrap p-4 text-xs font-mono leading-relaxed text-[#A0A39A]">
+            {doc.previewText || "No readable text extracted from document."}
+          </pre>
+        </div>
       )}
     </li>
   );

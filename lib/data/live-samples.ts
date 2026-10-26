@@ -47,3 +47,40 @@ export async function loadSamplesLive(db: SupabaseClient, ai: AIProvider | null,
   await saveQuestions(userId, questions, "sample");
   return { documents: ws.documents.length, topics: topics.length, chunks: chunks.length, questions: questions.length, embeddings: embedded.status };
 }
+
+export async function seedDemoAttemptLive(db: SupabaseClient, ai: AIProvider | null, userId: string) {
+  const { data: topicRows } = await db.from("topics").select("id").eq("user_id", userId);
+  if (!topicRows || topicRows.length === 0) return;
+
+  const { startQuizLive, submitQuizLive } = await import("./live-quiz");
+  const { createAdminClient } = await import("@/lib/supabase/server");
+
+  const quiz = await startQuizLive(db, ai, userId, {
+    topicIds: topicRows.map((t) => t.id),
+    count: 8,
+    difficulty: "mixed",
+    includeShortAnswer: false,
+  });
+
+  const admin = createAdminClient();
+  const { data: keyRows } = await admin
+    .from("question_keys")
+    .select("question_id, correct_option")
+    .eq("user_id", userId)
+    .in("question_id", quiz.questions.map((q) => q.id));
+
+  const answers = quiz.questions.map((q, idx) => {
+    const k = keyRows?.find((r) => r.question_id === q.id);
+    const correct = k?.correct_option ?? 0;
+    // 6 out of 8 correct, 2 wrong to show gap detection telemetry
+    const pickCorrect = idx % 4 !== 1;
+    const selected = pickCorrect ? correct : (correct + 1) % 4;
+    return {
+      questionId: q.id,
+      selectedOption: selected,
+    };
+  });
+
+  const today = new Date().toISOString().slice(0, 10);
+  await submitQuizLive(db, ai, userId, quiz.attemptId, answers, today);
+}
