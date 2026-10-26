@@ -1,0 +1,12 @@
+-- GapFinder AI seed data.
+--
+-- All study data is owned by a user and protected by Row Level Security, so the sample course
+-- cannot be inserted here without a user id. Instead, sample data is seeded per account:
+--   1. Create the judge account:  npm run demo-user
+--   2. Sign in and click “Load sample DSA course” on the Materials page
+--      (POST /api/samples). This inserts the sample syllabus and notes, the parsed topic map,
+--      the chunked passages (with embeddings when GEMINI_API_KEY is set), and 36 seeded,
+--      source-grounded questions with their answer keys in public.question_keys.
+--
+-- The storage bucket is created by the migration. Nothing else is required here.
+select 1;

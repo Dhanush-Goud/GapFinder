@@ -1,0 +1,32 @@
+DATA STRUCTURES AND ALGORITHMS - COURSE SYLLABUS
+Sample syllabus written for the GapFinder AI demo. Original content.
+
+Unit 1: Arrays (Weightage: High)
+1.1 Array representation and indexing - contiguous storage and address arithmetic
+1.2 Cost of array operations - access, search, insertion and deletion
+1.3 Two-pointer and sliding-window techniques - linear-time scans over sequences
+
+Unit 2: Linked Lists (Weightage: Medium)
+2.1 Singly linked lists - nodes, the head pointer and traversal
+2.2 Insertion and deletion in linked lists - pointer updates and their cost
+2.3 Doubly and circular linked lists - backward links and wrap-around structure
+
+Unit 3: Stacks and Queues (Weightage: Medium)
+3.1 Stacks - push, pop and last-in first-out order
+3.2 Queues - enqueue, dequeue and first-in first-out order
+3.3 Applications of stacks and queues - bracket matching and level-by-level processing
+
+Unit 4: Trees (Weightage: High)
+4.1 Tree terminology - root, leaf, depth and height
+4.2 Binary search trees - ordering property, search and insertion
+4.3 Tree traversals - preorder, inorder, postorder and level order
+
+Unit 5: Graphs (Weightage: High)
+5.1 Graph representations - adjacency matrix and adjacency list
+5.2 Breadth-first search - shortest paths in unweighted graphs
+5.3 Depth-first search - exploration order and cycle detection
+
+Unit 6: Recursion (Weightage: Medium)
+6.1 Base case and recursive case - designing terminating recursive functions
+6.2 The call stack - stack frames and stack overflow
+6.3 Recursion versus iteration - memoization and converting recursion to loops
